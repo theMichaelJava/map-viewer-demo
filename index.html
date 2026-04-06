@@ -648,10 +648,13 @@
     sourceEl.parentNode.replaceChild(wrapper, sourceEl);
 
     var map = L.map(mapEl, {
-      crs:L.CRS.Simple, minZoom:minZ, maxZoom:maxZ,
-      zoomControl:false, attributionControl:false,
-      scrollWheelZoom:true, zoomSnap:0.25, zoomDelta:0.5*zSpd,
-      wheelPxPerZoomLevel:120/zSpd, doubleClickZoom:true, keyboard:true,
+    crs: L.CRS.Simple, minZoom: minZ, maxZoom: maxZ,
+    zoomControl: false, attributionControl: false,
+    scrollWheelZoom: true,
+    zoomSnap: 0,           // ← continuous zoom, no snapping
+    zoomDelta: 0.5,        // ← how much +/- buttons jump
+    wheelPxPerZoomLevel: 200,  // ← higher = slower/smoother per scroll tick
+    doubleClickZoom: true, keyboard: true,
     });
 
     var bounds = [[0,0],[-iH,iW]];
@@ -660,7 +663,16 @@
     map.options.maxBoundsViscosity = 0.85;
 
     var cLat=-iH/2, cLng=iW/2;
-    map.setView([cLat,cLng], startZ);
+     // Compute zoom that fits the whole image in the viewer
+    function getFitZoom() {
+      var zW = Math.log2(wrapper.clientWidth  / iW);
+      var zH = Math.log2(wrapper.clientHeight / iH);
+      return Math.min(zW, zH);
+    }
+
+    // Apply fit zoom as the dynamic minimum
+    map.setMinZoom(getFitZoom());
+    map.setView([cLat,cLng], getFitZoom());
 
     var controls = document.createElement('div'); controls.className='fmv-controls';
     var bZI=mkBtn('zoomIn','Zoom in'), bZO=mkBtn('zoomOut','Zoom out');
@@ -743,7 +755,13 @@
     document.addEventListener('webkitfullscreenchange',onFSC);
 
     map.on('move zoom',function(){updBadge();updVP();});
-    window.addEventListener('resize',debounce(function(){map.invalidateSize();updVP();},150));
+   window.addEventListener('resize',debounce(function(){
+      map.invalidateSize();
+      var fz=getFitZoom();
+      map.setMinZoom(fz);
+      if(map.getZoom()<fz) map.setZoom(fz,{animate:true});
+      updVP();
+    },150));
     if(typeof ResizeObserver!=='undefined'){
       new ResizeObserver(debounce(function(){map.invalidateSize();updVP();},100)).observe(wrapper);
     }
