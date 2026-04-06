@@ -1,0 +1,272 @@
+/* ============================================================
+   fantasy-map-viewer.css
+   Global styles for the Leaflet-based fantasy map viewer.
+   Load once via Squarespace Code Injection → <HEAD>.
+   Scoped entirely to .fmv-* classes — zero global side-effects.
+   ============================================================ */
+
+/* ── CSS Variables ──────────────────────────────────────────── */
+:root {
+  --fmv-btn-bg:           rgba(20, 16, 12, 0.82);
+  --fmv-btn-bg-hover:     rgba(20, 16, 12, 0.96);
+  --fmv-btn-color:        #e8dcc8;
+  --fmv-btn-border:       rgba(232, 220, 200, 0.18);
+  --fmv-btn-radius:       6px;
+  --fmv-btn-size:         34px;
+  --fmv-shadow:           0 2px 12px rgba(0, 0, 0, 0.45);
+  --fmv-minimap-size:     140px;
+  --fmv-minimap-bg:       rgba(20, 16, 12, 0.72);
+  --fmv-minimap-border:   rgba(232, 220, 200, 0.22);
+  --fmv-minimap-viewport: rgba(255, 220, 120, 0.55);
+  --fmv-minimap-vp-border:rgba(255, 200, 60, 0.9);
+  --fmv-transition:       0.15s ease;
+}
+
+/* ── Outer wrapper ──────────────────────────────────────────── */
+.fmv-wrapper {
+  position: relative;
+  width: 100%;
+  /* Height is set by JS from data-height or defaults to 500px */
+  background: #1a1510;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: var(--fmv-shadow);
+  /* Prevent Squarespace text styles leaking in */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--fmv-btn-color);
+  /* GPU-composited layer for smooth panning */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Ensure the Leaflet map fills its wrapper */
+.fmv-wrapper .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #1a1510;
+  /* Suppress Leaflet's default outline */
+  outline: none;
+}
+
+/* Remove Leaflet's default attribution (we add our own optional credit) */
+.fmv-wrapper .leaflet-control-attribution {
+  display: none;
+}
+
+/* Leaflet zoom controls — hide the defaults; we use our own buttons */
+.fmv-wrapper .leaflet-control-zoom {
+  display: none;
+}
+
+/* ── Control button group ───────────────────────────────────── */
+.fmv-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  /* Do not interfere with Leaflet panning */
+  pointer-events: none;
+}
+
+.fmv-controls > * {
+  pointer-events: auto;
+}
+
+.fmv-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fmv-btn-size);
+  height: var(--fmv-btn-size);
+  background: var(--fmv-btn-bg);
+  color: var(--fmv-btn-color);
+  border: 1px solid var(--fmv-btn-border);
+  border-radius: var(--fmv-btn-radius);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  box-shadow: var(--fmv-shadow);
+  transition: background var(--fmv-transition), border-color var(--fmv-transition), transform var(--fmv-transition);
+  user-select: none;
+  -webkit-user-select: none;
+  /* Reset any Squarespace button styles */
+  text-decoration: none;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+}
+
+.fmv-btn:hover {
+  background: var(--fmv-btn-bg-hover);
+  border-color: rgba(232, 220, 200, 0.38);
+  transform: translateY(-1px);
+}
+
+.fmv-btn:active {
+  transform: translateY(0);
+}
+
+.fmv-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  display: block;
+}
+
+/* Separator between button groups */
+.fmv-btn-sep {
+  height: 1px;
+  background: var(--fmv-btn-border);
+  margin: 1px 0;
+}
+
+/* ── Zoom badge (bottom-left) ───────────────────────────────── */
+.fmv-zoom-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  background: var(--fmv-btn-bg);
+  border: 1px solid var(--fmv-btn-border);
+  border-radius: var(--fmv-btn-radius);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: rgba(232, 220, 200, 0.7);
+  pointer-events: none;
+  box-shadow: var(--fmv-shadow);
+}
+
+/* ── Minimap ────────────────────────────────────────────────── */
+.fmv-minimap {
+  position: absolute;
+  z-index: 1000;
+  width: var(--fmv-minimap-size);
+  height: var(--fmv-minimap-size);
+  background: var(--fmv-minimap-bg);
+  border: 1px solid var(--fmv-minimap-border);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: var(--fmv-shadow);
+  cursor: crosshair;
+  /* Positions set per-instance by JS */
+}
+
+.fmv-minimap-bottom-right {
+  bottom: 12px;
+  right: 12px;
+}
+
+.fmv-minimap-bottom-left {
+  bottom: 12px;
+  left: 12px;
+}
+
+.fmv-minimap-top-right {
+  top: 12px;
+  right: 12px;
+}
+
+.fmv-minimap-top-left {
+  top: 12px;
+  left: 12px;
+}
+
+/* The canvas inside the minimap */
+.fmv-minimap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: -webkit-optimize-contrast; /* sharp on hi-DPI */
+  image-rendering: crisp-edges;
+}
+
+/* The viewport indicator rectangle drawn over the minimap */
+.fmv-minimap-viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  background: var(--fmv-minimap-viewport);
+  border: 1.5px solid var(--fmv-minimap-vp-border);
+  border-radius: 2px;
+  pointer-events: none;
+  /* Smooth viewport rect transitions */
+  transition: top 0.05s linear, left 0.05s linear,
+              width 0.05s linear, height 0.05s linear;
+}
+
+/* ── Fullscreen state ───────────────────────────────────────── */
+.fmv-wrapper:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+.fmv-wrapper:-moz-full-screen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+.fmv-wrapper:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+/* ── Loading overlay ────────────────────────────────────────── */
+.fmv-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1510;
+  transition: opacity 0.4s ease;
+}
+
+.fmv-loading.fmv-loaded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fmv-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(232, 220, 200, 0.15);
+  border-top-color: rgba(232, 220, 200, 0.7);
+  border-radius: 50%;
+  animation: fmv-spin 0.8s linear infinite;
+}
+
+@keyframes fmv-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Mobile adjustments ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  :root {
+    --fmv-minimap-size: 90px;
+    --fmv-btn-size: 30px;
+  }
+
+  .fmv-btn {
+    font-size: 13px;
+  }
+
+  .fmv-zoom-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+}
