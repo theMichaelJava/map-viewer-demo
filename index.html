@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Map Viewer — Demo</title>
+  <title>The American War for Independence — Map Effects</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet"
@@ -11,35 +11,823 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""/>
 
-  <!-- Your viewer CSS -->
-  <link rel="stylesheet" href="fantasy-map-viewer.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 
+  <!-- ── Fantasy Map Viewer CSS ── -->
   <style>
-    body { margin: 0; background: #111; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 20px; }
-    h1 { color: #e8dcc8; font-family: Georgia, serif; font-size: 22px; }
+    /* ============================================================
+       fantasy-map-viewer.css (inlined for single-file demo)
+       ============================================================ */
+    :root {
+      --fmv-btn-bg:            rgba(20, 16, 12, 0.82);
+      --fmv-btn-bg-hover:      rgba(20, 16, 12, 0.96);
+      --fmv-btn-color:         #e8dcc8;
+      --fmv-btn-border:        rgba(232, 220, 200, 0.18);
+      --fmv-btn-radius:        6px;
+      --fmv-btn-size:          34px;
+      --fmv-shadow:            0 2px 12px rgba(0,0,0,0.45);
+      --fmv-minimap-size:      140px;
+      --fmv-minimap-bg:        rgba(20, 16, 12, 0.72);
+      --fmv-minimap-border:    rgba(232, 220, 200, 0.22);
+      --fmv-minimap-viewport:  rgba(255, 220, 120, 0.55);
+      --fmv-minimap-vp-border: rgba(255, 200, 60, 0.9);
+      --fmv-transition:        0.15s ease;
+    }
+    .fmv-wrapper {
+      position: relative; width: 100%; background: #1a1510;
+      overflow: hidden; border-radius: 4px;
+      box-shadow: var(--fmv-shadow);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px; line-height: 1; color: var(--fmv-btn-color);
+      -webkit-transform: translateZ(0); transform: translateZ(0);
+    }
+    .fmv-wrapper .leaflet-container { width: 100%; height: 100%; background: #1a1510; outline: none; }
+    .fmv-wrapper .leaflet-control-attribution,
+    .fmv-wrapper .leaflet-control-zoom { display: none; }
+    .fmv-controls {
+      position: absolute; top: 12px; left: 12px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 5px; pointer-events: none;
+    }
+    .fmv-controls > * { pointer-events: auto; }
+    .fmv-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: var(--fmv-btn-size); height: var(--fmv-btn-size);
+      background: var(--fmv-btn-bg); color: var(--fmv-btn-color);
+      border: 1px solid var(--fmv-btn-border); border-radius: var(--fmv-btn-radius);
+      cursor: pointer; font-size: 15px; line-height: 1;
+      box-shadow: var(--fmv-shadow);
+      transition: background var(--fmv-transition), border-color var(--fmv-transition), transform var(--fmv-transition);
+      user-select: none; -webkit-user-select: none;
+      text-decoration: none; padding: 0; margin: 0; box-sizing: border-box;
+      appearance: none; -webkit-appearance: none; outline: none;
+    }
+    .fmv-btn:hover { background: var(--fmv-btn-bg-hover); border-color: rgba(232,220,200,0.38); transform: translateY(-1px); }
+    .fmv-btn:active { transform: translateY(0); }
+    .fmv-btn svg { width: 16px; height: 16px; fill: currentColor; display: block; }
+    .fmv-btn-sep { height: 1px; background: var(--fmv-btn-border); margin: 1px 0; }
+    .fmv-zoom-badge {
+      position: absolute; bottom: 12px; left: 12px; z-index: 1000;
+      background: var(--fmv-btn-bg); border: 1px solid var(--fmv-btn-border);
+      border-radius: var(--fmv-btn-radius); padding: 4px 10px;
+      font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
+      color: rgba(232,220,200,0.7); pointer-events: none; box-shadow: var(--fmv-shadow);
+    }
+    .fmv-minimap {
+      position: absolute; z-index: 1000;
+      width: var(--fmv-minimap-size); height: var(--fmv-minimap-size);
+      background: var(--fmv-minimap-bg); border: 1px solid var(--fmv-minimap-border);
+      border-radius: 4px; overflow: hidden; box-shadow: var(--fmv-shadow); cursor: crosshair;
+    }
+    .fmv-minimap-bottom-right { bottom: 12px; right: 12px; }
+    .fmv-minimap-bottom-left  { bottom: 12px; left: 12px; }
+    .fmv-minimap-top-right    { top: 12px; right: 12px; }
+    .fmv-minimap-top-left     { top: 12px; left: 12px; }
+    .fmv-minimap canvas { display: block; width: 100%; height: 100%; }
+    .fmv-minimap-viewport {
+      position: absolute; top: 0; left: 0; box-sizing: border-box;
+      background: var(--fmv-minimap-viewport); border: 1.5px solid var(--fmv-minimap-vp-border);
+      border-radius: 2px; pointer-events: none;
+      transition: top .05s linear, left .05s linear, width .05s linear, height .05s linear;
+    }
+    .fmv-wrapper:-webkit-full-screen,
+    .fmv-wrapper:-moz-full-screen,
+    .fmv-wrapper:fullscreen { width: 100vw; height: 100vh; border-radius: 0; }
+    .fmv-loading {
+      position: absolute; inset: 0; z-index: 2000;
+      display: flex; align-items: center; justify-content: center;
+      background: #1a1510; transition: opacity 0.4s ease;
+    }
+    .fmv-loading.fmv-loaded { opacity: 0; pointer-events: none; }
+    .fmv-loading-spinner {
+      width: 32px; height: 32px;
+      border: 2px solid rgba(232,220,200,0.15);
+      border-top-color: rgba(232,220,200,0.7);
+      border-radius: 50%; animation: fmv-spin 0.8s linear infinite;
+    }
+    @keyframes fmv-spin { to { transform: rotate(360deg); } }
+    @media (max-width: 600px) {
+      :root { --fmv-minimap-size: 90px; --fmv-btn-size: 30px; }
+      .fmv-btn { font-size: 13px; }
+      .fmv-zoom-badge { font-size: 10px; padding: 3px 8px; }
+    }
+
+    /* ============================================================
+       Page styles — MapEffects product page clone
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      background: #faf8f4;
+      color: #1c1812;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    /* ── Nav ── */
+    .site-nav {
+      background: #fff;
+      border-bottom: 1px solid #e8e0d4;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .site-nav .logo {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #1c1812;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+
+    .site-nav .logo span { color: #7b3f00; }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1c1812;
+      text-decoration: none;
+      opacity: 0.75;
+      transition: opacity 0.15s;
+    }
+
+    .nav-links a:hover { opacity: 1; }
+
+    /* ── Hero image banner ── */
+    .hero-banner {
+      width: 100%;
+      max-height: 420px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-banner img {
+      width: 100%;
+      height: 420px;
+      object-fit: cover;
+      object-position: center 30%;
+      display: block;
+    }
+
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.45) 100%);
+    }
+
+    .hero-text {
+      position: absolute;
+      bottom: 36px;
+      left: 0; right: 0;
+      text-align: center;
+      z-index: 2;
+      padding: 0 24px;
+    }
+
+    .hero-text h1 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.15;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.5);
+      margin-bottom: 8px;
+    }
+
+    .hero-text p {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(16px, 2.5vw, 21px);
+      color: rgba(255,255,255,0.85);
+      text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+    }
+
+    /* ── Main content ── */
+    .page-content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 52px 24px 72px;
+    }
+
+    /* ── Price + CTA ── */
+    .product-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e0d8cc;
+    }
+
+    .product-header h2 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 38px;
+      font-weight: 400;
+      color: #1c1812;
+    }
+
+    .btn-buy {
+      display: inline-block;
+      background: #7b3f00;
+      color: #fff;
+      font-family: 'Lato', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 13px 32px;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .btn-buy:hover { background: #5c2f00; }
+
+    /* ── Description ── */
+    .product-description {
+      font-size: 16.5px;
+      line-height: 1.8;
+      color: #2e2820;
+      margin-bottom: 36px;
+    }
+
+    .product-description p { margin-bottom: 18px; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-family: 'Lato', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9a8a78;
+      margin-bottom: 16px;
+    }
+
+    /* ── Interactive map viewer ── */
+    .map-viewer-section {
+      margin-bottom: 48px;
+    }
+
+    .map-viewer-label {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: #4a3828;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .map-viewer-label::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 18px;
+      background: #7b3f00;
+      border-radius: 2px;
+    }
+
+    .map-viewer-caption {
+      font-size: 13px;
+      color: #9a8a78;
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+
+    /* ── Print details ── */
+    .print-details {
+      margin-bottom: 36px;
+    }
+
+    .print-details h3 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1c1812;
+      margin-bottom: 12px;
+    }
+
+    .print-details ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .print-details ul li {
+      padding: 6px 0;
+      padding-left: 18px;
+      position: relative;
+      font-size: 15px;
+      color: #3a3028;
+      border-bottom: 1px solid #f0e8dc;
+    }
+
+    .print-details ul li:last-child { border-bottom: none; }
+
+    .print-details ul li::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: #7b3f00;
+      font-weight: bold;
+    }
+
+    .print-details ul li strong { color: #1c1812; }
+
+    /* ── Gallery ── */
+    .gallery-section { margin-bottom: 48px; }
+
+    .gallery-section h3 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1c1812;
+      margin-bottom: 18px;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .gallery-grid img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      border-radius: 3px;
+      display: block;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
+    }
+
+    .gallery-grid img:hover { opacity: 0.92; }
+
+    .gallery-grid img:first-child {
+      grid-column: 1 / -1;
+      aspect-ratio: 16/7;
+    }
+
+    /* ── Shipping callout ── */
+    .shipping-callout {
+      background: #f5f0e6;
+      border: 1px solid #e0d4c0;
+      border-left: 3px solid #7b3f00;
+      border-radius: 0 4px 4px 0;
+      padding: 18px 22px;
+      margin-bottom: 36px;
+      font-size: 14.5px;
+    }
+
+    .shipping-callout h4 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #1c1812;
+    }
+
+    .shipping-callout ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .shipping-callout ul li {
+      padding: 4px 0 4px 16px;
+      position: relative;
+      color: #3a3028;
+    }
+
+    .shipping-callout ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #7b3f00;
+      font-size: 12px;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: #1c1812;
+      color: rgba(245, 240, 228, 0.5);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+    }
+
+    .site-footer a {
+      color: rgba(245,240,228,0.65);
+      text-decoration: none;
+      margin: 0 12px;
+    }
+
+    .site-footer a:hover { color: #e8dcc8; }
+
+    /* ── Demo banner ── */
+    .demo-banner {
+      background: #7b3f00;
+      color: #fff;
+      text-align: center;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 600px) {
+      .site-nav { padding: 0 16px; }
+      .nav-links { display: none; }
+      .page-content { padding: 32px 16px 48px; }
+      .gallery-grid { grid-template-columns: 1fr; }
+      .gallery-grid img:first-child { grid-column: auto; aspect-ratio: 4/3; }
+      .product-header { flex-direction: column; align-items: flex-start; }
+    }
   </style>
 </head>
 <body>
 
-  <h1>Map Viewer — Proof of Concept</h1>
+<!-- Demo notice -->
+<div class="demo-banner">⚠ Proof-of-Concept Demo — Interactive Map Viewer Test</div>
 
-  <div class="fantasy-map-viewer"
-       data-image="AmericanRevolutionViewer.png"
-       data-width="5100"
-       data-height="3300"
-       data-viewer-height="600px"
-       data-start-zoom="-1"
-       data-minimap-position="bottom-right">
+<!-- Nav -->
+<nav class="site-nav">
+  <a class="logo" href="#">Map <span>Effects</span></a>
+  <ul class="nav-links">
+    <li><a href="#">Map Prints</a></li>
+    <li><a href="#">Map Builders</a></li>
+    <li><a href="#">Learn to Map</a></li>
+    <li><a href="#">About</a></li>
+  </ul>
+</nav>
+
+<!-- Hero banner -->
+<div class="hero-banner">
+  <img
+    src="https://images.squarespace-cdn.com/content/v1/63d00bcc43aae3657868830b/4b800913-d53f-411e-a103-04ad79d778cd/American-Flatlay+%2872%29.jpg"
+    alt="American Revolution Map flatlay"
+    loading="eager">
+  <div class="hero-text">
+    <h1>The American War for Independence</h1>
+    <p>A Hand-drawn Map Celebrating the Founding Story of the United States</p>
+  </div>
+</div>
+
+<!-- ── Main content ── -->
+<div class="page-content">
+
+  <!-- Price + CTA -->
+  <div class="product-header">
+    <h2>$29</h2>
+    <a class="btn-buy" href="https://www.mapeffects.co/american-revolution-map" target="_blank">Order the Print →</a>
   </div>
 
-  <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLcE="
-    crossorigin=""></script>
+  <!-- Description -->
+  <div class="product-description">
+    <p>Every nation has a founding mythology, but that does not mean the events didn't happen. For Americans, our founding story is rooted in Paul Revere's midnight ride, the shot heard around the world at Lexington, and the bold crossing of the Delaware by our national hero, George Washington.</p>
+    <p>It is anchored in the Declaration of Independence, the formal and defiant claim that these colonies would stand as a free and independent nation. This hand-drawn map highlights major battles on both land and sea, along with a visual timeline of key events that shaped us as a people and forged a nation.</p>
+    <p>Hanging this map on your wall is more than decoration. It is a celebration of more than 250 years of American history and the enduring ideals that shaped a nation.</p>
+  </div>
 
-  <!-- Your viewer JS -->
-  <script src="fantasy-map-viewer.js"></script>
+  <!-- ── Interactive Map Viewer ── -->
+  <div class="map-viewer-section">
+    <div class="map-viewer-label">Explore the Map Interactively</div>
+    <p class="map-viewer-caption">Scroll to zoom · Click and drag to pan · Use the minimap to navigate</p>
+
+    <div class="fantasy-map-viewer"
+         data-image="AmericanRevolutionViewer.png"
+         data-width="3300"
+         data-height="5100"
+         data-viewer-height="700px"
+         data-min-zoom="-2"
+         data-max-zoom="3"
+         data-start-zoom="-1"
+         data-padding="120"
+         data-minimap-enabled="true"
+         data-minimap-position="bottom-right"
+         data-zoom-speed="1.1">
+    </div>
+  </div>
+
+  <!-- Print details -->
+  <div class="print-details">
+    <h3>Art Print Details</h3>
+    <ul>
+      <li>17"×11" Art Print Reproduction</li>
+      <li>Printed on sturdy, matte Parchtone Paper</li>
+      <li>Hand-drawn by Josh Stolarz</li>
+    </ul>
+  </div>
+
+  <!-- Shipping -->
+  <div class="shipping-callout">
+    <h4>Shipping &amp; Guarantee</h4>
+    <ul>
+      <li><strong>Only shipping to the United States at this time</strong></li>
+      <li>Shipping costs are calculated at checkout</li>
+      <li>Returns accepted only for items that arrive damaged or have a defect</li>
+    </ul>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery-section">
+    <h3>More Photos</h3>
+    <div class="gallery-grid">
+      <img
+        src="https://images.squarespace-cdn.com/content/v1/63d00bcc43aae3657868830b/4b800913-d53f-411e-a103-04ad79d778cd/American-Flatlay+%2872%29.jpg"
+        alt="American Revolution Map flatlay">
+      <img
+        src="https://images.squarespace-cdn.com/content/v1/63d00bcc43aae3657868830b/1772580089121-OKN3RAHIKX7US40TE0JL/American-Photo-2+%2872%29.JPG"
+        alt="American Revolution Map on wall">
+      <img
+        src="https://images.squarespace-cdn.com/content/v1/63d00bcc43aae3657868830b/1772579002218-BCQ711B6N033N3M52UZF/American-Photo-1+%2872%29.jpg"
+        alt="American Revolution Map close-up">
+    </div>
+  </div>
+
+</div><!-- /page-content -->
+
+<!-- Footer -->
+<footer class="site-footer">
+  <div style="margin-bottom: 12px;">
+    <a href="https://www.mapeffects.co/faq">FAQ</a>
+    <a href="https://mapeffects.co/guarantee">Guarantee</a>
+    <a href="https://www.mapeffects.co/contact">Contact</a>
+  </div>
+  <div>© Map Effects · Demo page — not the real store</div>
+</footer>
+
+<!-- ── Leaflet JS ── -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLcE="
+  crossorigin=""></script>
+
+<!-- ── Fantasy Map Viewer JS (inlined for single-file demo) ── -->
+<script>
+(function () {
+  'use strict';
+
+  function debounce(fn, delay) {
+    var timer;
+    return function () {
+      var ctx = this, args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(function () { fn.apply(ctx, args); }, delay);
+    };
+  }
+
+  function dataAttr(el, key, fallback) {
+    var val = el.dataset[key];
+    if (val === undefined || val === '') return fallback;
+    if (typeof fallback === 'number') { var n = parseFloat(val); return isNaN(n) ? fallback : n; }
+    if (typeof fallback === 'boolean') return val.toLowerCase() !== 'false';
+    return val;
+  }
+
+  var ICONS = {
+    zoomIn:    '<svg viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
+    zoomOut:   '<svg viewBox="0 0 20 20"><path d="M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
+    reset:     '<svg viewBox="0 0 20 20"><path d="M10 3a7 7 0 1 0 4.9 2.05M14 1v4h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    fit:       '<svg viewBox="0 0 20 20"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    fullscreen:'<svg viewBox="0 0 20 20"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    exitFS:    '<svg viewBox="0 0 20 20"><path d="M7 3v4H3M17 7h-4V3M3 13h4v4M13 17v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+  };
+
+  function makeButton(iconKey, title) {
+    var btn = document.createElement('button');
+    btn.className = 'fmv-btn'; btn.title = title; btn.type = 'button';
+    btn.innerHTML = ICONS[iconKey] || iconKey;
+    return btn;
+  }
+
+  function initViewer(sourceEl) {
+    var imageUrl       = dataAttr(sourceEl, 'image',           '');
+    var imageWidth     = dataAttr(sourceEl, 'width',           2048);
+    var imageHeight    = dataAttr(sourceEl, 'height',          1024);
+    var minZoom        = dataAttr(sourceEl, 'minZoom',         -3);
+    var maxZoom        = dataAttr(sourceEl, 'maxZoom',          4);
+    var startZoom      = dataAttr(sourceEl, 'startZoom',        0);
+    var padding        = dataAttr(sourceEl, 'padding',          100);
+    var minimapEnabled = dataAttr(sourceEl, 'minimapEnabled',  true);
+    var minimapPos     = dataAttr(sourceEl, 'minimapPosition', 'bottom-right');
+    var zoomSpeed      = dataAttr(sourceEl, 'zoomSpeed',        1);
+    var viewerHeight   = dataAttr(sourceEl, 'viewerHeight',   '520px');
+
+    if (!imageUrl) { console.warn('[FMV] data-image required'); return; }
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'fmv-wrapper';
+    wrapper.style.height = (typeof viewerHeight === 'number') ? viewerHeight + 'px' : viewerHeight;
+
+    var loading = document.createElement('div'); loading.className = 'fmv-loading';
+    var spinner = document.createElement('div'); spinner.className = 'fmv-loading-spinner';
+    loading.appendChild(spinner); wrapper.appendChild(loading);
+
+    var mapEl = document.createElement('div');
+    mapEl.style.cssText = 'width:100%;height:100%;';
+    wrapper.appendChild(mapEl);
+
+    sourceEl.parentNode.replaceChild(wrapper, sourceEl);
+
+    var map = L.map(mapEl, {
+      crs: L.CRS.Simple, minZoom: minZoom, maxZoom: maxZoom,
+      zoomControl: false, attributionControl: false,
+      scrollWheelZoom: true, zoomSnap: 0.25, zoomDelta: 0.5 * zoomSpeed,
+      wheelPxPerZoomLevel: 120 / zoomSpeed, doubleClickZoom: true, keyboard: true,
+    });
+
+    var imageBounds = [[0, 0], [-imageHeight, imageWidth]];
+    L.imageOverlay(imageUrl, imageBounds, { interactive: false }).addTo(map);
+
+    var pad = padding;
+    map.setMaxBounds([[pad, -pad], [-imageHeight - pad, imageWidth + pad]]);
+    map.options.maxBoundsViscosity = 0.85;
+
+    var centerLat = -imageHeight / 2;
+    var centerLng =  imageWidth  / 2;
+    map.setView([centerLat, centerLng], startZoom);
+
+    // Controls
+    var controls = document.createElement('div'); controls.className = 'fmv-controls';
+    var btnZoomIn  = makeButton('zoomIn',    'Zoom in (+)');
+    var btnZoomOut = makeButton('zoomOut',   'Zoom out (−)');
+    var sep1 = document.createElement('div'); sep1.className = 'fmv-btn-sep';
+    var btnReset = makeButton('reset', 'Reset view');
+    var btnFit   = makeButton('fit',   'Fit to window');
+    var sep2 = document.createElement('div'); sep2.className = 'fmv-btn-sep';
+    var btnFS = makeButton('fullscreen', 'Fullscreen');
+    controls.appendChild(btnZoomIn); controls.appendChild(btnZoomOut);
+    controls.appendChild(sep1); controls.appendChild(btnReset); controls.appendChild(btnFit);
+    if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+      controls.appendChild(sep2); controls.appendChild(btnFS);
+    }
+    wrapper.appendChild(controls);
+
+    // Zoom badge
+    var badge = document.createElement('div'); badge.className = 'fmv-zoom-badge';
+    badge.textContent = 'z ' + startZoom.toFixed(1); wrapper.appendChild(badge);
+    function updateBadge() { badge.textContent = 'z ' + map.getZoom().toFixed(1); }
+
+    // Minimap
+    var minimapEl = null, minimapCanvas = null, minimapCtx = null,
+        minimapViewport = null, minimapImg = null, minimapSize = 140;
+
+    function buildMinimap() {
+      if (!minimapEnabled) return;
+      minimapEl = document.createElement('div');
+      minimapEl.className = 'fmv-minimap fmv-minimap-' + minimapPos;
+      minimapCanvas = document.createElement('canvas');
+      minimapCanvas.width = minimapSize; minimapCanvas.height = minimapSize;
+      minimapCtx = minimapCanvas.getContext('2d');
+      minimapViewport = document.createElement('div');
+      minimapViewport.className = 'fmv-minimap-viewport';
+      minimapEl.appendChild(minimapCanvas); minimapEl.appendChild(minimapViewport);
+      wrapper.appendChild(minimapEl);
+
+      minimapImg = new Image(); minimapImg.crossOrigin = 'anonymous';
+      minimapImg.onload = function () { setTimeout(drawMinimap, 120); };
+      minimapImg.onerror = function () {
+        console.warn('[FMV] Minimap CORS issue — main viewer unaffected');
+        if (minimapEl) minimapEl.style.display = 'none';
+      };
+      minimapImg.src = imageUrl;
+
+      minimapEl.addEventListener('click', function (e) {
+        var rect = minimapEl.getBoundingClientRect();
+        var s = getMinimapScale();
+        var relX = (e.clientX - rect.left  - s.offsetX) / s.drawW;
+        var relY = (e.clientY - rect.top   - s.offsetY) / s.drawH;
+        relX = Math.max(0, Math.min(1, relX)); relY = Math.max(0, Math.min(1, relY));
+        map.panTo([-relY * imageHeight, relX * imageWidth], { animate: true, duration: 0.35 });
+      });
+    }
+
+    function getMinimapScale() {
+      var aspect = imageWidth / imageHeight;
+      if (aspect >= 1) {
+        return { scale: minimapSize/imageWidth, drawW: minimapSize, drawH: minimapSize/aspect,
+                 offsetX: 0, offsetY: (minimapSize - minimapSize/aspect)/2 };
+      } else {
+        return { scale: minimapSize/imageHeight, drawW: minimapSize*aspect, drawH: minimapSize,
+                 offsetX: (minimapSize - minimapSize*aspect)/2, offsetY: 0 };
+      }
+    }
+
+    function drawMinimap() {
+      if (!minimapCtx || !minimapImg || !minimapImg.complete) return;
+      var s = getMinimapScale();
+      minimapCtx.clearRect(0, 0, minimapSize, minimapSize);
+      minimapCtx.drawImage(minimapImg, s.offsetX, s.offsetY, s.drawW, s.drawH);
+    }
+
+    function updateMinimapViewport() {
+      if (!minimapViewport || !minimapEnabled) return;
+      var bounds = map.getBounds(); var s = getMinimapScale();
+      var topFrac    = Math.max(0, Math.min(1, (-bounds.getNorth()) / imageHeight));
+      var leftFrac   = Math.max(0, Math.min(1,   bounds.getWest()  / imageWidth));
+      var bottomFrac = Math.max(0, Math.min(1, (-bounds.getSouth()) / imageHeight));
+      var rightFrac  = Math.max(0, Math.min(1,   bounds.getEast()  / imageWidth));
+      var top  = s.offsetY + topFrac    * s.drawH;
+      var left = s.offsetX + leftFrac   * s.drawW;
+      var vpW  = Math.max(4, (s.offsetX + rightFrac  * s.drawW) - left);
+      var vpH  = Math.max(4, (s.offsetY + bottomFrac * s.drawH) - top);
+      minimapViewport.style.top    = top  + 'px';
+      minimapViewport.style.left   = left + 'px';
+      minimapViewport.style.width  = vpW  + 'px';
+      minimapViewport.style.height = vpH  + 'px';
+    }
+
+    // Button events
+    btnZoomIn.addEventListener('click',  function(e){ e.stopPropagation(); map.zoomIn(0.5); });
+    btnZoomOut.addEventListener('click', function(e){ e.stopPropagation(); map.zoomOut(0.5); });
+    btnReset.addEventListener('click',   function(e){ e.stopPropagation(); map.setView([centerLat, centerLng], startZoom, {animate:true,duration:0.4}); });
+    btnFit.addEventListener('click',     function(e){ e.stopPropagation(); map.fitBounds(L.latLngBounds(imageBounds), {animate:true,duration:0.4}); });
+
+    // Fullscreen
+    function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+    btnFS.addEventListener('click', function(e) {
+      e.stopPropagation();
+      isFullscreen()
+        ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+        : (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen).call(wrapper);
+    });
+    function onFSChange() {
+      setTimeout(function() {
+        map.invalidateSize(); updateMinimapViewport();
+        btnFS.innerHTML = isFullscreen() ? ICONS['exitFS'] : ICONS['fullscreen'];
+        btnFS.title     = isFullscreen() ? 'Exit fullscreen' : 'Fullscreen';
+      }, 120);
+    }
+    document.addEventListener('fullscreenchange',       onFSChange);
+    document.addEventListener('webkitfullscreenchange', onFSChange);
+
+    // Map events
+    map.on('move zoom', function() { updateBadge(); updateMinimapViewport(); });
+
+    // Resize
+    var onResize = debounce(function() { map.invalidateSize(); updateMinimapViewport(); }, 150);
+    window.addEventListener('resize', onResize);
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(debounce(function(){ map.invalidateSize(); updateMinimapViewport(); }, 100)).observe(wrapper);
+    }
+
+    // Loading spinner dismiss
+    var probeImg = new Image();
+    probeImg.onload = function() {
+      loading.classList.add('fmv-loaded');
+      setTimeout(function(){ if (loading.parentNode) loading.parentNode.removeChild(loading); }, 500);
+    };
+    probeImg.onerror = function() {
+      spinner.style.display = 'none';
+      loading.innerHTML = '<span style="color:rgba(232,220,200,0.5);font-size:13px;">Image could not be loaded.</span>';
+    };
+    probeImg.src = imageUrl;
+
+    buildMinimap();
+    updateBadge();
+    setTimeout(updateMinimapViewport, 250);
+  }
+
+  function initAll() {
+    if (typeof L === 'undefined') {
+      console.error('[FMV] Leaflet not loaded.'); return;
+    }
+    var els = document.querySelectorAll('.fantasy-map-viewer');
+    Array.prototype.slice.call(els).forEach(function(el) {
+      try { initViewer(el); } catch(err) { console.error('[FMV] Init error:', err); }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+})();
+</script>
 
 </body>
 </html>
