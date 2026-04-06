@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map Viewer — Demo</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+
+  <!-- Your viewer CSS -->
+  <link rel="stylesheet" href="fantasy-map-viewer.css">
+
+  <style>
+    body { margin: 0; background: #111; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 20px; }
+    h1 { color: #e8dcc8; font-family: Georgia, serif; font-size: 22px; }
+  </style>
+</head>
+<body>
+
+  <h1>Map Viewer — Proof of Concept</h1>
+
+  <div class="fantasy-map-viewer"
+       data-image="YOUR_IMAGE_URL_HERE"
+       data-width="4096"
+       data-height="2560"
+       data-viewer-height="600px"
+       data-start-zoom="-1"
+       data-minimap-position="bottom-right">
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLcE="
+    crossorigin=""></script>
+
+  <!-- Your viewer JS -->
+  <script src="fantasy-map-viewer.js"></script>
+
+</body>
+</html>
